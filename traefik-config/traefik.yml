@@ -1,0 +1,25 @@
+# Traefik Static Configuration for BYKT
+# Uses file provider only - no Docker socket required
+
+api:
+  dashboard: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+  traefik:
+    address: ":8080"
+
+providers:
+  # File provider for static routing (works on all platforms)
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+# Enable access logs
+accessLog: {}
+
+# Enable Traefik logs
+log:
+  level: INFO

@@ -1,0 +1,173 @@
+# BYKT Production Docker Compose
+# Uses pre-built images from Docker Hub for fast deployment
+# Includes Traefik reverse proxy for secure single-port access
+#
+# Quick Start:
+#   1. cp .env.example .env
+#   2. docker compose -f docker-compose.prod.yml up -d
+#   3. Open http://127.0.0.1 (port 80)
+#
+# Optional: Get a public URL via Cloudflare tunnel - check logs:
+#   docker logs bykt-cloudflared
+
+name: bykt
+
+services:
+  # Traefik Reverse Proxy - routes all traffic through single endpoint
+  traefik:
+    image: traefik:v3.2
+    container_name: bykt-traefik
+    ports:
+      - "80:80"      # Main HTTP entrypoint
+      - "8080:8080"  # Dashboard (disable in hardened production)
+    volumes:
+      - ./traefik-config:/etc/traefik:ro
+    networks:
+      - bykt-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Cloudflare Tunnel - optional public HTTPS URL (no account needed)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bykt-cloudflared
+    command: tunnel --url http://traefik:80
+    networks:
+      - bykt-network
+    depends_on:
+      - traefik
+    restart: unless-stopped
+    profiles:
+      - tunnel  # Only starts with: docker compose --profile tunnel up -d
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bykt-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bykt}
+      POSTGRES_USER: ${POSTGRES_USER:-bykt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bykt_dev_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - bykt_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bykt}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bykt-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: bykt-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - bykt_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bykt-network
+    restart: unless-stopped
+
+  # Executor Service - Isolated code/command execution
+  executor:
+    image: dx111ge/bykt-executor:latest
+    container_name: bykt-executor
+    networks:
+      - bykt-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Backend API (accessed via Traefik at /api and /socket.io)
+  backend:
+    image: dx111ge/bykt-backend:latest
+    container_name: bykt-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bykt}:${POSTGRES_PASSWORD:-bykt_dev_password}@postgres:5432/${POSTGRES_DB:-bykt}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-bykt}:${POSTGRES_PASSWORD:-bykt_dev_password}@postgres:5432/${POSTGRES_DB:-bykt}
+      REDIS_URL: redis://redis:6379/0
+      EXECUTOR_URL: http://executor:8000
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1}
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+    # No ports exposed - Traefik routes /api and /socket.io here
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      executor:
+        condition: service_healthy
+    networks:
+      - bykt-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Application (accessed via Traefik at /)
+  frontend:
+    image: dx111ge/bykt-frontend:latest
+    container_name: bykt-frontend
+    environment:
+      # Empty API URL = same-origin requests (Traefik routes /api to backend)
+      NEXT_PUBLIC_API_URL: ""
+      BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://127.0.0.1}
+      NODE_ENV: production
+    # No ports exposed - Traefik routes / here
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bykt-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  bykt_postgres_data:
+    driver: local
+  bykt_redis_data:
+    driver: local
+
+networks:
+  bykt-network:
+    driver: bridge

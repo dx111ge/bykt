@@ -1,0 +1,59 @@
+# Traefik Dynamic Configuration for BYKT
+# Routes traffic to backend and frontend services
+
+http:
+  routers:
+    # Backend health check (highest priority)
+    backend-health:
+      rule: "Path(`/api/health`)"
+      service: backend
+      entryPoints:
+        - web
+      priority: 200
+      middlewares:
+        - strip-api-prefix
+
+    # Backend API routes (higher priority)
+    backend-api:
+      rule: "PathPrefix(`/api`)"
+      service: backend
+      entryPoints:
+        - web
+      priority: 100
+
+    # Socket.IO routes (higher priority)
+    backend-socketio:
+      rule: "PathPrefix(`/socket.io`)"
+      service: backend
+      entryPoints:
+        - web
+      priority: 100
+
+    # Frontend routes (catch-all, lower priority)
+    frontend:
+      rule: "PathPrefix(`/`)"
+      service: frontend
+      entryPoints:
+        - web
+      priority: 1
+
+  middlewares:
+    strip-api-prefix:
+      stripPrefix:
+        prefixes:
+          - "/api"
+
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend:8000"
+        sticky:
+          cookie:
+            name: bykt_backend
+            httpOnly: true
+
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:3000"
