@@ -1,0 +1,40 @@
+Business Source License 1.1
+
+Parameters
+-------------------------------------------------------------------------------
+Licensor: Sven Andreas
+Licensed Work: Aria ITSM (excluding modules explicitly marked as "Enterprise")
+Additional Use Grant:
+Production use is permitted at no cost, provided that:
+1. The total number of unique users (natural persons) 
+accessing the software does not exceed 10 users.
+2. You do not use the Licensed Work to create a competing 
+commercial product or service (i.e., you do not sell 
+or distribute a branched version of this software).
+3. Your use is limited to the Base Modules.
+-------------------------------------------------------------------------------
+
+TERMS
+
+The Licensor hereby grants you the right to copy, modify, create derivative works, redistribute, and make non-production use of the Licensed Work.
+
+The Licensor may grant you additional rights beyond those described above in a separate license agreement (the "Additional Use Grant").
+
+You may not use the Licensed Work for production use unless you comply with the Additional Use Grant above or obtain a separate commercial license.
+
+If you violate any terms of this license, your rights will automatically terminate.
+
+"Licensed Work" means the software identified above.
+
+"Licensor" means the copyright owner of the Licensed Work.
+
+"Non-production use" means any use of the Licensed Work that is not for production use.
+
+"Production use" means use of the Licensed Work in a production environment for any purpose, including internal use and offering the Licensed Work as a service on a commercial basis.
+
+
+NO WARRANTY; LIMITATION OF LIABILITY
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
