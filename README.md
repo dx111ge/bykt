@@ -9,9 +9,10 @@ An AI-powered IT Service Management platform with intelligent workflow orchestra
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) (Docker Desktop on Windows/Mac)
-- [Ollama](https://ollama.ai/) with a local LLM:
+- [Ollama](https://ollama.ai/) with the required models:
   ```bash
   ollama pull qwen2.5:7b
+  ollama pull nomic-embed-text-v2-moe:latest
   ```
 
 ### Installation
