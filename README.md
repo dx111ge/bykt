@@ -60,6 +60,29 @@ docker pull dx111ge/bykt-frontend:latest
 - Ensure Ollama is running: `ollama serve`
 - Linux users: Edit `.env` and set `OLLAMA_BASE_URL=http://YOUR_HOST_IP:11434`
 
+**Ollama parallel processing (recommended):**
+
+By default Ollama processes one request at a time, which causes slow response times and queuing in multi-user setups. Set `OLLAMA_NUM_PARALLEL` to enable concurrent LLM calls:
+
+```powershell
+# Windows (persistent, survives reboots):
+[System.Environment]::SetEnvironmentVariable('OLLAMA_NUM_PARALLEL', '4', 'User')
+# Then restart Ollama from the system tray
+```
+
+```bash
+# Linux (systemd):
+sudo systemctl edit ollama
+# Add: Environment="OLLAMA_NUM_PARALLEL=4"
+sudo systemctl daemon-reload && sudo systemctl restart ollama
+
+# macOS:
+launchctl setenv OLLAMA_NUM_PARALLEL 4
+# Restart Ollama from the menu bar
+```
+
+Each parallel slot uses additional VRAM (~1-2 GB per slot for qwen2.5:7b). With 4 slots, expect ~8-10 GB total. Reduce if you run out of GPU memory.
+
 ### Stop BYKT
 
 ```bash
@@ -164,6 +187,7 @@ Edit `.env` to customize:
 | `JWT_SECRET_KEY` | (dev key) | JWT secret - **change in production!** |
 | `OLLAMA_BASE_URL` | host.docker.internal:11434 | Ollama API endpoint |
 | `OLLAMA_MODEL` | qwen2.5:7b | LLM model to use |
+| `OLLAMA_NUM_PARALLEL` | 1 | Concurrent LLM slots (set on host, not in `.env`) |
 
 ## Development
 
@@ -180,8 +204,16 @@ docker compose logs -f frontend
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
+## Support
+
+Having issues with installation or need help?
+
+- **Website:** [bykt.netlify.app](https://bykt.netlify.app)
+- **Discord:** [discord.gg/bykt](https://discord.gg/bykt)
+- **GitHub Issues:** [github.com/dx111ge/bykt/issues](https://github.com/dx111ge/bykt/issues)
+
 ## License
 
 This project is licensed under the Business Source License 1.1 - see the [LICENSE](LICENSE) file for details.
 
-**Free for production use** with up to 10 users. 
+**Free for production use** with up to 10 users.
