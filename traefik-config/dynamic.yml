@@ -48,6 +48,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://backend:8000"
+        responseForwarding:
+          flushInterval: "100ms"
         sticky:
           cookie:
             name: bykt_backend

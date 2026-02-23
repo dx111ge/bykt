@@ -8,8 +8,19 @@ api:
 entryPoints:
   web:
     address: ":80"
+    transport:
+      respondingTimeouts:
+        readTimeout: "120s"
+        writeTimeout: "120s"
+        idleTimeout: "120s"
   traefik:
     address: ":8080"
+
+serversTransport:
+  forwardingTimeouts:
+    dialTimeout: "30s"
+    responseHeaderTimeout: "120s"
+    idleConnTimeout: "90s"
 
 providers:
   # File provider for static routing (works on all platforms)
